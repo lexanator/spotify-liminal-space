@@ -1,4 +1,5 @@
 import type { VibeProfile } from '@/lib/vibe';
+import LivingRoomImage from './LivingRoomImage';
 import VibeCard from './VibeCard';
 
 export default function VibeProfileView({ profile }: { profile: VibeProfile }) {
@@ -8,7 +9,7 @@ export default function VibeProfileView({ profile }: { profile: VibeProfile }) {
         <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">
           Your listening room
         </h2>
-        <p className="mt-3 text-lg leading-relaxed text-zinc-100">{profile.livingRoomDescription}</p>
+        <LivingRoomImage description={profile.livingRoomDescription} />
         <div className="mt-4 flex flex-wrap gap-2">
           {profile.moodTags.map((tag) => (
             <span
