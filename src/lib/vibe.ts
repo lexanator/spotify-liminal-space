@@ -3,6 +3,7 @@ import type { AudioFeatures, SpotifyArtist, SpotifyTrack } from './spotify-api';
 export type TrackVibe = {
   id: string;
   name: string;
+  artistNames: string;
   albumImage: string | null;
   spotifyUrl: string;
   popularity: number;
@@ -13,14 +14,14 @@ export type TrackVibe = {
 export type ArtistVibe = {
   id: string;
   name: string;
-  image: string | null;
   genres: string[];
   spotifyUrl: string;
-  tracks: TrackVibe[];
+  vibe: string;
 };
 
 export type VibeProfile = {
   artists: ArtistVibe[];
+  tracks: TrackVibe[];
   moodTags: string[];
   livingRoomDescription: string;
 };
@@ -133,30 +134,42 @@ function trackVibeFromAxesAndFeatures(
   return `${picked} - ${energyWord} and ${moodWord}, ${popularityTier}.`;
 }
 
+function artistVibePhrase(descriptors: string[], axes: Axes): string {
+  const picked = descriptors.slice(0, 2).join(', ');
+  const energyWord = tierWord(axes.energy, 'laid-back', 'mid-tempo', 'high-energy');
+  const moodWord = tierWord(axes.brightness, 'moody', 'even-keeled', 'sun-lit');
+  return `${picked} - ${energyWord} and ${moodWord}.`;
+}
+
 export function buildVibeProfile(
   artists: SpotifyArtist[],
-  artistTracks: Map<string, SpotifyTrack[]>,
+  tracks: SpotifyTrack[],
+  genresByArtistId: Map<string, string[]>,
   audioFeatures: Map<string, AudioFeatures> | null
 ): VibeProfile {
   const artistVibes: ArtistVibe[] = artists.map((artist) => {
     const { axes, descriptors } = axesForGenres(artist.genres);
-    const tracks = (artistTracks.get(artist.id) ?? []).slice(0, 5).map((track) => ({
+    return {
+      id: artist.id,
+      name: artist.name,
+      genres: artist.genres,
+      spotifyUrl: `https://open.spotify.com/artist/${artist.id}`,
+      vibe: artistVibePhrase(descriptors, axes),
+    };
+  });
+
+  const trackVibes: TrackVibe[] = tracks.map((track) => {
+    const genres = genresByArtistId.get(track.artists[0]?.id) ?? [];
+    const { axes, descriptors } = axesForGenres(genres);
+    return {
       id: track.id,
       name: track.name,
+      artistNames: track.artists.map((a) => a.name).join(', '),
       albumImage: track.album.images[0]?.url ?? null,
       spotifyUrl: track.external_urls.spotify,
       popularity: track.popularity,
       releaseYear: track.album.release_date ? parseInt(track.album.release_date.slice(0, 4), 10) : null,
       vibe: trackVibeFromAxesAndFeatures(descriptors, axes, track, audioFeatures?.get(track.id) ?? null),
-    }));
-
-    return {
-      id: artist.id,
-      name: artist.name,
-      image: null,
-      genres: artist.genres,
-      spotifyUrl: `https://open.spotify.com/artist/${artist.id}`,
-      tracks,
     };
   });
 
@@ -166,6 +179,7 @@ export function buildVibeProfile(
 
   return {
     artists: artistVibes,
+    tracks: trackVibes,
     moodTags,
     livingRoomDescription: describeLivingRoom(overall, dominantGenres, artists.map((a) => a.name)),
   };
