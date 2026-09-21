@@ -1,20 +1,23 @@
 export type TimeRange = 'short_term' | 'medium_term' | 'long_term';
 
+// Spotify's /me/top/tracks and /me/top/artists return a reduced object shape
+// for apps without extended-quota access: no `popularity`, no `followers`,
+// and `genres` is frequently an empty array. Types reflect only what's
+// actually present at runtime rather than the full catalog-endpoint shape.
 export type SpotifyTrack = {
   id: string;
   name: string;
   artists: { id: string; name: string }[];
   album: { name: string; images: { url: string; width: number; height: number }[]; release_date: string };
-  popularity: number;
+  duration_ms: number;
+  explicit: boolean;
   external_urls: { spotify: string };
-  preview_url: string | null;
 };
 
 export type SpotifyArtist = {
   id: string;
   name: string;
   genres: string[];
-  popularity: number;
 };
 
 export type AudioFeatures = {
