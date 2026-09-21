@@ -18,6 +18,7 @@ export type SpotifyArtist = {
   id: string;
   name: string;
   genres: string[];
+  images: { url: string; width: number; height: number }[];
 };
 
 export type AudioFeatures = {
@@ -67,6 +68,7 @@ export async function fetchTopArtists(
   return (data.items as SpotifyArtist[]).map((artist) => ({
     ...artist,
     genres: artist.genres ?? [],
+    images: artist.images ?? [],
   }));
 }
 

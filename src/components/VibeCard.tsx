@@ -9,6 +9,7 @@ export default function VibeCard({
   vibe,
   colors,
   image,
+  imageShape = 'square',
   href,
 }: {
   rank: number;
@@ -17,6 +18,7 @@ export default function VibeCard({
   vibe: string;
   colors: string[];
   image?: string | null;
+  imageShape?: 'square' | 'circle';
   href: string;
 }) {
   const [expanded, setExpanded] = useState(false);
@@ -53,12 +55,21 @@ export default function VibeCard({
         {String(rank).padStart(2, '0')}
       </span>
 
-      {image && (
+      {image && imageShape === 'square' && (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={image}
           alt=""
           className="absolute right-3 top-3 h-14 w-14 rotate-3 rounded-md object-cover shadow-xl ring-2 ring-white/20"
+        />
+      )}
+
+      {image && imageShape === 'circle' && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={image}
+          alt=""
+          className="absolute left-1/2 top-6 h-20 w-20 -translate-x-1/2 rounded-full object-cover shadow-xl ring-2 ring-white/30"
         />
       )}
 

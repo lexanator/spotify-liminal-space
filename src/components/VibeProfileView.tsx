@@ -32,6 +32,8 @@ export default function VibeProfileView({ profile }: { profile: VibeProfile }) {
               subtitle={artist.genres[0]}
               vibe={artist.vibe}
               colors={artist.colors}
+              image={artist.image}
+              imageShape="circle"
               href={artist.spotifyUrl}
             />
           ))}

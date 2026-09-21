@@ -14,6 +14,7 @@ export type TrackVibe = {
 export type ArtistVibe = {
   id: string;
   name: string;
+  image: string | null;
   genres: string[];
   spotifyUrl: string;
   vibe: string;
@@ -228,6 +229,7 @@ export function buildVibeProfile(
     return {
       id: artist.id,
       name: artist.name,
+      image: artist.images[0]?.url ?? null,
       genres: artist.genres,
       spotifyUrl: `https://open.spotify.com/artist/${artist.id}`,
       vibe,
