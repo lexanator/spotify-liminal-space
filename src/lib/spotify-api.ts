@@ -61,7 +61,10 @@ export async function fetchTopArtists(
     accessToken,
     `/me/top/artists?time_range=${timeRange}&limit=${limit}`
   );
-  return data.items;
+  return (data.items as SpotifyArtist[]).map((artist) => ({
+    ...artist,
+    genres: artist.genres ?? [],
+  }));
 }
 
 /**

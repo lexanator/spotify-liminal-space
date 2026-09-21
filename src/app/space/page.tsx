@@ -1,12 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
-import type { SoundProfile } from '@/lib/sound-profile';
+import VibeProfileView from '@/components/VibeProfileView';
+import type { VibeProfile } from '@/lib/vibe';
 import type { TimeRange } from '@/lib/spotify-api';
-
-const Scene = dynamic(() => import('@/components/Scene'), { ssr: false });
 
 const RANGE_LABELS: Record<TimeRange, string> = {
   short_term: 'Last 4 weeks',
@@ -14,7 +12,7 @@ const RANGE_LABELS: Record<TimeRange, string> = {
   long_term: 'All time',
 };
 
-type Loaded = { range: TimeRange; profile: SoundProfile };
+type Loaded = { range: TimeRange; profile: VibeProfile };
 type Failed = { range: TimeRange; message: string };
 
 export default function SpacePage() {
@@ -22,12 +20,11 @@ export default function SpacePage() {
   const [range, setRange] = useState<TimeRange>('medium_term');
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [failed, setFailed] = useState<Failed | null>(null);
-  const [showInfo, setShowInfo] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
 
-    fetch(`/api/profile?range=${range}`)
+    fetch(`/api/vibe-profile?range=${range}`)
       .then(async (res) => {
         if (res.status === 401) {
           router.push('/');
@@ -53,23 +50,9 @@ export default function SpacePage() {
   const isLoading = !profile && !error;
 
   return (
-    <div className="relative h-dvh w-full bg-black text-zinc-50">
-      {profile && <Scene profile={profile} />}
-
-      {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <p className="animate-pulse text-zinc-400">Mapping your sound space...</p>
-        </div>
-      )}
-
-      {error && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <p className="text-red-400">{error}</p>
-        </div>
-      )}
-
-      <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between p-4">
-        <div className="pointer-events-auto flex gap-2 rounded-full bg-black/60 p-1 backdrop-blur">
+    <div className="min-h-dvh w-full bg-black text-zinc-50">
+      <div className="sticky top-0 z-10 flex items-center justify-between border-b border-zinc-800 bg-black/80 p-4 backdrop-blur">
+        <div className="flex gap-2 rounded-full bg-zinc-900 p-1">
           {(Object.keys(RANGE_LABELS) as TimeRange[]).map((r) => (
             <button
               key={r}
@@ -83,32 +66,26 @@ export default function SpacePage() {
           ))}
         </div>
 
-        <form action="/api/auth/logout" method="POST" className="pointer-events-auto">
-          <button className="rounded-full bg-black/60 px-3 py-1.5 text-xs text-zinc-300 backdrop-blur hover:text-white">
+        <form action="/api/auth/logout" method="POST">
+          <button className="rounded-full bg-zinc-900 px-3 py-1.5 text-xs text-zinc-300 hover:text-white">
             Disconnect
           </button>
         </form>
       </div>
 
-      {profile && showInfo && (
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center p-4">
-          <div className="pointer-events-auto max-w-xl rounded-2xl bg-black/60 p-4 text-sm text-zinc-200 backdrop-blur">
-            <div className="flex items-start justify-between gap-4">
-              <p>{profile.description}</p>
-              <button
-                onClick={() => setShowInfo(false)}
-                className="shrink-0 text-zinc-500 hover:text-zinc-300"
-                aria-label="Dismiss"
-              >
-                ✕
-              </button>
-            </div>
-            <p className="mt-2 text-xs text-zinc-500">
-              Click and drag to look around · WASD to fly · scroll to speed up
-            </p>
-          </div>
+      {isLoading && (
+        <div className="flex h-[60vh] items-center justify-center">
+          <p className="animate-pulse text-zinc-400">Reading your top artists and tracks...</p>
         </div>
       )}
+
+      {error && (
+        <div className="flex h-[60vh] items-center justify-center">
+          <p className="text-red-400">{error}</p>
+        </div>
+      )}
+
+      {profile && <VibeProfileView profile={profile} />}
     </div>
   );
 }
