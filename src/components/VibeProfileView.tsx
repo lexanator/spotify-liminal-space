@@ -1,5 +1,5 @@
 import type { VibeProfile } from '@/lib/vibe';
-import LivingRoomImage from './LivingRoomImage';
+import LiminalSpaceImage from './LiminalSpaceImage';
 import VibeCard from './VibeCard';
 
 export default function VibeProfileView({ profile }: { profile: VibeProfile }) {
@@ -7,9 +7,9 @@ export default function VibeProfileView({ profile }: { profile: VibeProfile }) {
     <div className="mx-auto max-w-6xl px-4 py-10">
       <section className="rounded-2xl bg-zinc-900/60 p-6">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">
-          Your listening room
+          Your liminal space
         </h2>
-        <LivingRoomImage description={profile.livingRoomDescription} />
+        <LiminalSpaceImage description={profile.liminalSpaceDescription} />
         <div className="mt-4 flex flex-wrap gap-2">
           {profile.moodTags.map((tag) => (
             <span

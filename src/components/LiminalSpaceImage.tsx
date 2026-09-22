@@ -11,7 +11,7 @@ function hashSeed(str: string): number {
   return Math.abs(hash) % 1_000_000;
 }
 
-export default function LivingRoomImage({ description }: { description: string }) {
+export default function LiminalSpaceImage({ description }: { description: string }) {
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
 
@@ -30,13 +30,13 @@ export default function LivingRoomImage({ description }: { description: string }
     <div className="relative mt-3 overflow-hidden rounded-xl bg-zinc-800" style={{ aspectRatio: '16 / 10' }}>
       {!loaded && (
         <div className="absolute inset-0 flex items-center justify-center">
-          <p className="animate-pulse text-sm text-zinc-500">Generating your listening room...</p>
+          <p className="animate-pulse text-sm text-zinc-500">Generating your liminal space...</p>
         </div>
       )}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={src}
-        alt="Generated illustration of your listening room"
+        alt="Generated illustration of your liminal space"
         className={`h-full w-full object-cover transition-opacity duration-500 ${
           loaded ? 'opacity-100' : 'opacity-0'
         }`}
