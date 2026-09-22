@@ -1,6 +1,6 @@
 const ERROR_MESSAGES: Record<string, string> = {
-  access_denied: "You'll need to approve Spotify access to explore your sound space.",
-  invalid_state: 'Something went wrong starting the login - please try again.',
+  access_denied: "You'll need to approve Spotify access to explore your liminal space.",
+  invalid_state: 'Something went wrong with your login - please try again.',
   token_exchange_failed: "Spotify didn't accept that login - please try again.",
 };
 
@@ -14,8 +14,7 @@ export default async function Home(props: PageProps<'/'>) {
       <div className="flex max-w-lg flex-col items-center gap-6 text-center">
         <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">Sound Space</h1>
         <p className="text-balance text-lg text-zinc-400">
-          Connect Spotify to see your top artists and tracks reimagined as genre-coded vibe cards,
-          plus an AI-generated liminal space built from your own listening habits.
+          Connect Spotify to see your liminal space based on your top artists, tracks, and listening habits.
         </p>
 
         {errorMessage && (
