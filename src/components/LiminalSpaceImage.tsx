@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 function hashSeed(str: string): number {
   let hash = 0;
@@ -23,6 +23,9 @@ export default function LiminalSpaceImage({ description }: { description: string
   const [seed, setSeed] = useState(() => hashSeed(description));
   const [result, setResult] = useState<{ seed: number; src: string } | null>(null);
   const [failedSeed, setFailedSeed] = useState<number | null>(null);
+  // Pollinations occasionally rate-limits a request; retry once with a fresh
+  // seed automatically before surfacing a failure to the viewer.
+  const retriedRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -34,10 +37,19 @@ export default function LiminalSpaceImage({ description }: { description: string
     const src = buildSrc(description, seed);
     const preload = new window.Image();
     preload.onload = () => {
-      if (!cancelled) setResult({ seed, src });
+      if (cancelled) return;
+      retriedRef.current = false;
+      setResult({ seed, src });
     };
     preload.onerror = () => {
-      if (!cancelled) setFailedSeed(seed);
+      if (cancelled) return;
+      if (!retriedRef.current) {
+        retriedRef.current = true;
+        setSeed(Math.floor(Math.random() * 1_000_000));
+      } else {
+        retriedRef.current = false;
+        setFailedSeed(seed);
+      }
     };
     preload.src = src;
 
@@ -48,9 +60,12 @@ export default function LiminalSpaceImage({ description }: { description: string
 
   const displaySrc = result?.src ?? null;
   const isGenerating = result?.seed !== seed && failedSeed !== seed;
-  const currentAttemptFailed = failedSeed === seed && result?.seed !== seed;
+  const neverLoadedAndFailed = failedSeed === seed && !displaySrc;
+  const regenerateFailed = failedSeed === seed && !!displaySrc;
 
   function regenerate() {
+    setFailedSeed(null);
+    retriedRef.current = false;
     setSeed(Math.floor(Math.random() * 1_000_000));
   }
 
@@ -71,7 +86,7 @@ export default function LiminalSpaceImage({ description }: { description: string
         </div>
       )}
 
-      {!isGenerating && !displaySrc && currentAttemptFailed && (
+      {!isGenerating && neverLoadedAndFailed && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
           <p className="text-sm text-zinc-500">Couldn&apos;t generate an image right now.</p>
           <button
@@ -84,12 +99,19 @@ export default function LiminalSpaceImage({ description }: { description: string
       )}
 
       {displaySrc && !isGenerating && (
-        <button
-          onClick={regenerate}
-          className="absolute right-3 top-3 rounded-full bg-black/50 px-3 py-1.5 text-xs text-white backdrop-blur hover:bg-black/70"
-        >
-          Regenerate ↻
-        </button>
+        <div className="absolute right-3 top-3 flex items-center gap-2">
+          {regenerateFailed && (
+            <span className="rounded-full bg-red-950/80 px-2.5 py-1 text-xs text-red-300">
+              Failed - try again
+            </span>
+          )}
+          <button
+            onClick={regenerate}
+            className="rounded-full bg-black/50 px-3 py-1.5 text-xs text-white backdrop-blur hover:bg-black/70"
+          >
+            Regenerate ↻
+          </button>
+        </div>
       )}
     </div>
   );
