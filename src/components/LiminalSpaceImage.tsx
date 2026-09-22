@@ -11,9 +11,38 @@ function hashSeed(str: string): number {
   return Math.abs(hash) % 1_000_000;
 }
 
+// Same prompt + different seed often nudges Pollinations toward only
+// superficially different output (same composition, different noise). These
+// are derived from the seed so each regenerate also varies the actual prompt
+// text - a genuinely different camera angle and rendering style, not just a
+// re-roll - while a given seed still always resolves to the same image.
+const CAMERA_ANGLES = [
+  'a wide-angle establishing shot',
+  'an intimate close framing',
+  'a low angle looking up',
+  'a high angle looking down its length',
+  'a first-person point of view walking through it',
+  'a distant, perfectly symmetrical wide shot',
+  'a shot taken from just inside a doorway looking in',
+];
+
+const RENDER_STYLES = [
+  'shot on grainy analog film',
+  'rendered in crisp hyperrealistic photography',
+  'with subtle VHS distortion and scan lines',
+  'in stark, high-contrast digital clarity',
+  'with heavy film grain and desaturated color',
+  'lit like a found-footage horror still',
+  'as a slightly overexposed photograph',
+  'with the flat, dull color of an old security camera feed',
+];
+
 function buildSrc(description: string, seed: number): string {
+  const camera = CAMERA_ANGLES[seed % CAMERA_ANGLES.length];
+  const style = RENDER_STYLES[Math.floor(seed / CAMERA_ANGLES.length) % RENDER_STYLES.length];
+  const prompt = `${description} Shot as ${camera}, ${style}.`;
   return `https://image.pollinations.ai/prompt/${encodeURIComponent(
-    description
+    prompt
   )}?width=1024&height=640&seed=${seed}&nologo=true`;
 }
 
