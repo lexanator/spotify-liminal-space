@@ -14,8 +14,8 @@ export default async function Home(props: PageProps<'/'>) {
       <div className="flex max-w-lg flex-col items-center gap-6 text-center">
         <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">Sound Space</h1>
         <p className="text-balance text-lg text-zinc-400">
-          Connect Spotify and step into a 3D space built from your own top tracks - clustered by
-          genre, laid out by taste.
+          Connect Spotify to see your top artists and tracks reimagined as genre-coded vibe cards,
+          plus an AI-generated liminal space built from your own listening habits.
         </p>
 
         {errorMessage && (

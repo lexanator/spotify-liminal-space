@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Sound Space",
-  description: "An explorable 3D map of your Spotify listening taste",
+  description: "Your Spotify taste reimagined as vibe cards and a generated liminal space",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
