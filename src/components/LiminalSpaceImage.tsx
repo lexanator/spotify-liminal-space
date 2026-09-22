@@ -11,11 +11,9 @@ function hashSeed(str: string): number {
   return Math.abs(hash) % 1_000_000;
 }
 
-// Same prompt + different seed often nudges Pollinations toward only
-// superficially different output (same composition, different noise). These
-// are derived from the seed so each regenerate also varies the actual prompt
-// text - a genuinely different camera angle and rendering style, not just a
-// re-roll - while a given seed still always resolves to the same image.
+// A seed derived from the text keeps the image (and the camera/style below,
+// also derived from it) stable across reloads instead of Pollinations
+// returning a fresh random image on every visit.
 const CAMERA_ANGLES = [
   'a wide-angle establishing shot',
   'an intimate close framing',
@@ -47,63 +45,58 @@ function buildSrc(description: string, seed: number): string {
 }
 
 export default function LiminalSpaceImage({ description }: { description: string }) {
-  // A seed derived from the text keeps the image stable across reloads by
-  // default; "Regenerate" picks a new random one to reroll on demand.
-  const [seed, setSeed] = useState(() => hashSeed(description));
-  const [result, setResult] = useState<{ seed: number; src: string } | null>(null);
-  const [failedSeed, setFailedSeed] = useState<number | null>(null);
-  // Pollinations occasionally rate-limits a request; retry once with a fresh
-  // seed automatically before surfacing a failure to the viewer.
+  const seed = hashSeed(description);
+  const [loadedSrc, setLoadedSrc] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   const retriedRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
+    retriedRef.current = false;
 
-    // Preload off-screen and only swap the visible image once it's ready,
-    // so a slow or failed generation never blanks the image or exposes the
-    // raw prompt text - the previously displayed image (or nothing, on
-    // first load) stays up the whole time.
+    // Preload off-screen and only swap the visible image once it's ready, so
+    // a slow or failed generation never blanks the image or exposes the raw
+    // prompt text - nothing shows until the first successful load.
     const src = buildSrc(description, seed);
-    const preload = new window.Image();
-    preload.onload = () => {
-      if (cancelled) return;
-      retriedRef.current = false;
-      setResult({ seed, src });
-    };
-    preload.onerror = () => {
-      if (cancelled) return;
-      if (!retriedRef.current) {
-        retriedRef.current = true;
-        setSeed(Math.floor(Math.random() * 1_000_000));
-      } else {
-        retriedRef.current = false;
-        setFailedSeed(seed);
-      }
-    };
-    preload.src = src;
+
+    function attemptLoad() {
+      const preload = new window.Image();
+      preload.onload = () => {
+        if (!cancelled) setLoadedSrc(src);
+      };
+      preload.onerror = () => {
+        if (cancelled) return;
+        // Pollinations occasionally rate-limits a single request - retry once.
+        if (!retriedRef.current) {
+          retriedRef.current = true;
+          attemptLoad();
+        } else {
+          setFailed(true);
+        }
+      };
+      preload.src = src;
+    }
+    attemptLoad();
 
     return () => {
       cancelled = true;
     };
-  }, [description, seed]);
+  }, [description, seed, attempt]);
 
-  const displaySrc = result?.src ?? null;
-  const isGenerating = result?.seed !== seed && failedSeed !== seed;
-  const neverLoadedAndFailed = failedSeed === seed && !displaySrc;
-  const regenerateFailed = failedSeed === seed && !!displaySrc;
+  const isGenerating = !loadedSrc && !failed;
 
-  function regenerate() {
-    setFailedSeed(null);
-    retriedRef.current = false;
-    setSeed(Math.floor(Math.random() * 1_000_000));
+  function retry() {
+    setFailed(false);
+    setAttempt((a) => a + 1);
   }
 
   return (
     <div className="relative mt-3 overflow-hidden rounded-xl bg-zinc-800" style={{ aspectRatio: '16 / 10' }}>
-      {displaySrc && (
+      {loadedSrc && (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={displaySrc}
+          src={loadedSrc}
           alt="Generated illustration of your liminal space"
           className="h-full w-full object-cover"
         />
@@ -115,30 +108,14 @@ export default function LiminalSpaceImage({ description }: { description: string
         </div>
       )}
 
-      {!isGenerating && neverLoadedAndFailed && (
+      {failed && !loadedSrc && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
           <p className="text-sm text-zinc-500">Couldn&apos;t generate an image right now.</p>
           <button
-            onClick={regenerate}
+            onClick={retry}
             className="rounded-full bg-white/10 px-3 py-1.5 text-xs text-white hover:bg-white/20"
           >
             Try again
-          </button>
-        </div>
-      )}
-
-      {displaySrc && !isGenerating && (
-        <div className="absolute right-3 top-3 flex items-center gap-2">
-          {regenerateFailed && (
-            <span className="rounded-full bg-red-950/80 px-2.5 py-1 text-xs text-red-300">
-              Failed - try again
-            </span>
-          )}
-          <button
-            onClick={regenerate}
-            className="rounded-full bg-black/50 px-3 py-1.5 text-xs text-white backdrop-blur hover:bg-black/70"
-          >
-            Regenerate ↻
           </button>
         </div>
       )}
