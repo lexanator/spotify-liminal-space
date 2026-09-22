@@ -14,13 +14,22 @@ function hashSeed(str: string): number {
 export default function LiminalSpaceImage({ description }: { description: string }) {
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
+  // null = use the stable, description-derived seed. Set by "Regenerate" to reroll.
+  const [regenSeed, setRegenSeed] = useState<number | null>(null);
 
   // A seed derived from the text keeps the image stable across reloads
-  // instead of Pollinations returning a fresh random image every time.
-  const seed = hashSeed(description);
+  // instead of Pollinations returning a fresh random image every time -
+  // unless the viewer explicitly asks for a different take.
+  const seed = regenSeed ?? hashSeed(description);
   const src = `https://image.pollinations.ai/prompt/${encodeURIComponent(
     description
   )}?width=1024&height=640&seed=${seed}&nologo=true`;
+
+  function regenerate() {
+    setLoaded(false);
+    setFailed(false);
+    setRegenSeed(Math.floor(Math.random() * 1_000_000));
+  }
 
   if (failed) {
     return <p className="mt-3 text-lg leading-relaxed text-zinc-100">{description}</p>;
@@ -43,6 +52,14 @@ export default function LiminalSpaceImage({ description }: { description: string
         onLoad={() => setLoaded(true)}
         onError={() => setFailed(true)}
       />
+      {loaded && (
+        <button
+          onClick={regenerate}
+          className="absolute right-3 top-3 rounded-full bg-black/50 px-3 py-1.5 text-xs text-white backdrop-blur hover:bg-black/70"
+        >
+          Regenerate ↻
+        </button>
+      )}
     </div>
   );
 }
