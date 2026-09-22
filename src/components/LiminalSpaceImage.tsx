@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 function hashSeed(str: string): number {
   let hash = 0;
@@ -11,48 +11,79 @@ function hashSeed(str: string): number {
   return Math.abs(hash) % 1_000_000;
 }
 
-export default function LiminalSpaceImage({ description }: { description: string }) {
-  const [loaded, setLoaded] = useState(false);
-  const [failed, setFailed] = useState(false);
-  // null = use the stable, description-derived seed. Set by "Regenerate" to reroll.
-  const [regenSeed, setRegenSeed] = useState<number | null>(null);
-
-  // A seed derived from the text keeps the image stable across reloads
-  // instead of Pollinations returning a fresh random image every time -
-  // unless the viewer explicitly asks for a different take.
-  const seed = regenSeed ?? hashSeed(description);
-  const src = `https://image.pollinations.ai/prompt/${encodeURIComponent(
+function buildSrc(description: string, seed: number): string {
+  return `https://image.pollinations.ai/prompt/${encodeURIComponent(
     description
   )}?width=1024&height=640&seed=${seed}&nologo=true`;
+}
+
+export default function LiminalSpaceImage({ description }: { description: string }) {
+  // A seed derived from the text keeps the image stable across reloads by
+  // default; "Regenerate" picks a new random one to reroll on demand.
+  const [seed, setSeed] = useState(() => hashSeed(description));
+  const [result, setResult] = useState<{ seed: number; src: string } | null>(null);
+  const [failedSeed, setFailedSeed] = useState<number | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    // Preload off-screen and only swap the visible image once it's ready,
+    // so a slow or failed generation never blanks the image or exposes the
+    // raw prompt text - the previously displayed image (or nothing, on
+    // first load) stays up the whole time.
+    const src = buildSrc(description, seed);
+    const preload = new window.Image();
+    preload.onload = () => {
+      if (!cancelled) setResult({ seed, src });
+    };
+    preload.onerror = () => {
+      if (!cancelled) setFailedSeed(seed);
+    };
+    preload.src = src;
+
+    return () => {
+      cancelled = true;
+    };
+  }, [description, seed]);
+
+  const displaySrc = result?.src ?? null;
+  const isGenerating = result?.seed !== seed && failedSeed !== seed;
+  const currentAttemptFailed = failedSeed === seed && result?.seed !== seed;
 
   function regenerate() {
-    setLoaded(false);
-    setFailed(false);
-    setRegenSeed(Math.floor(Math.random() * 1_000_000));
-  }
-
-  if (failed) {
-    return <p className="mt-3 text-lg leading-relaxed text-zinc-100">{description}</p>;
+    setSeed(Math.floor(Math.random() * 1_000_000));
   }
 
   return (
     <div className="relative mt-3 overflow-hidden rounded-xl bg-zinc-800" style={{ aspectRatio: '16 / 10' }}>
-      {!loaded && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <p className="animate-pulse text-sm text-zinc-500">Generating your liminal space...</p>
+      {displaySrc && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={displaySrc}
+          alt="Generated illustration of your liminal space"
+          className="h-full w-full object-cover"
+        />
+      )}
+
+      {isGenerating && (
+        <div className="absolute inset-0 flex items-center justify-center bg-zinc-900/70">
+          <p className="animate-pulse text-sm text-zinc-300">Generating your liminal space...</p>
         </div>
       )}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={src}
-        alt="Generated illustration of your liminal space"
-        className={`h-full w-full object-cover transition-opacity duration-500 ${
-          loaded ? 'opacity-100' : 'opacity-0'
-        }`}
-        onLoad={() => setLoaded(true)}
-        onError={() => setFailed(true)}
-      />
-      {loaded && (
+
+      {!isGenerating && !displaySrc && currentAttemptFailed && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+          <p className="text-sm text-zinc-500">Couldn&apos;t generate an image right now.</p>
+          <button
+            onClick={regenerate}
+            className="rounded-full bg-white/10 px-3 py-1.5 text-xs text-white hover:bg-white/20"
+          >
+            Try again
+          </button>
+        </div>
+      )}
+
+      {displaySrc && !isGenerating && (
         <button
           onClick={regenerate}
           className="absolute right-3 top-3 rounded-full bg-black/50 px-3 py-1.5 text-xs text-white backdrop-blur hover:bg-black/70"
